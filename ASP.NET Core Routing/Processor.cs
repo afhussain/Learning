@@ -17,9 +17,13 @@ public class MyRequestProcessor
 
     public async Task Invoke(HttpContext context)
     {
-        _counter++;
-        if (!context.Response.HasStarted) context.Response.ContentType = "text/plain";
-        await context.Response.WriteAsync($"Counter {_counter} - Request processor invoked (by either middleware or endpoint) - {_message} \n");
+        // Ignore favicon request - see https://stackoverflow.com/questions/66620965/why-are-middleware-components-called-twice-in-a-net-core-pipeline
+        if (context.Request.Path != "/favicon.ico") {
+            _counter++;
+            if (!context.Response.HasStarted) context.Response.ContentType = "text/plain";
+            await context.Response.WriteAsync($"Counter {_counter} - Request processor invoked (by either middleware or endpoint) - {_message} \n");
+        }
+
         if (_next != null)
             await _next(context);
     }
@@ -39,9 +43,8 @@ public class MyEndPointProcessor
     {
         _counter++;
         if (!context.Response.HasStarted) context.Response.ContentType = "text/plain";
-        await context.Response.WriteAsync($"Counter {_counter} - Endpoint processor invoked - route segments are: \n");
-        foreach (var kvp in context.Request.RouteValues) {
+        await context.Response.WriteAsync($"Counter {_counter} - Endpoint processor invoked for route '{context.Request.Path}' - segments are: \n");
+        foreach (var kvp in context.Request.RouteValues)
             await context.Response.WriteAsync($"    {kvp.Key}: {kvp.Value} \n");
-        }
     }
 }
